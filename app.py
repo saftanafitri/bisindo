@@ -420,7 +420,7 @@ def predict_with_confidence(sequence, model, device, word2idx, idx2word, max_len
         if pred_token == word2idx["<EOS>"]:
             break
 
-    tokens = [idx2word.get(idx, "") for idx in trg_idx]
+    tokens = [idx2word[idx] for idx in trg_idx]
     sentence_tokens = [t for t in tokens if t not in ["<SOS>", "<EOS>", "<PAD>", ""]]
     avg_conf = float(np.mean(confidences)) if confidences else 0.0
     return " ".join(sentence_tokens), avg_conf, confidences

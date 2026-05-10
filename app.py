@@ -308,18 +308,29 @@ def normalize(seq):
 
 @st.cache_resource
 def load_mediapipe_detectors():
-    """Load MediaPipe detectors (cached)."""
     try:
-        base_options_hand = python.BaseOptions(model_asset_path="hand_landmarker.task")
+        base_dir  = os.path.dirname(os.path.abspath(__file__))
+        hand_path = os.path.join(base_dir, "hand_landmarker.task")
+        pose_path = os.path.join(base_dir, "pose_landmarker_lite.task")
+
+        if not os.path.exists(hand_path):
+            st.error(f"❌ hand_landmarker.task tidak ditemukan di: {hand_path}")
+            return None, None
+        if not os.path.exists(pose_path):
+            st.error(f"❌ pose_landmarker_lite.task tidak ditemukan di: {pose_path}")
+            return None, None
+
+        base_options_hand = python.BaseOptions(model_asset_path=hand_path)
         hand_detector = vision.HandLandmarker.create_from_options(
             vision.HandLandmarkerOptions(base_options=base_options_hand, num_hands=2)
         )
-        base_options_pose = python.BaseOptions(model_asset_path="pose_landmarker_lite.task")
+        base_options_pose = python.BaseOptions(model_asset_path=pose_path)
         pose_detector = vision.PoseLandmarker.create_from_options(
             vision.PoseLandmarkerOptions(base_options=base_options_pose)
         )
         return pose_detector, hand_detector
     except Exception as e:
+        st.error(f"❌ Error load MediaPipe: {e}")
         return None, None
 
 
@@ -404,8 +415,9 @@ def predict_with_confidence(sequence, model, device, word2idx, idx2word, max_len
 # ─────────────────────────────────────────────
 # KONFIGURASI PATH
 # ─────────────────────────────────────────────
-MODEL_PATH = "model/best_model.pth"
-VOCAB_PATH  = "model/vocab.pkl"
+_BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(_BASE_DIR, "model", "best_model.pth")
+VOCAB_PATH = os.path.join(_BASE_DIR, "model", "vocab.pkl")
 INPUT_DIM   = 450
 HIDDEN_DIM  = 256
 MAX_DECODE  = 30

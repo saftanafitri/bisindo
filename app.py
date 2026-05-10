@@ -448,45 +448,55 @@ if vocab_file:
     try:
         data = pickle.load(vocab_file)
 
-        if isinstance(data, list):
-            # format: ['<PAD>', '<SOS>', '<EOS>', 'aku', ...]
+        # =========================================
+        # FORMAT 1:
+        # (word2idx, idx2word)
+        # =========================================
+        if (
+            isinstance(data, tuple)
+            and len(data) == 2
+            and isinstance(data[0], dict)
+            and isinstance(data[1], dict)
+        ):
+            word2idx, idx2word = data
+
+        # =========================================
+        # FORMAT 2:
+        # ['<PAD>', '<SOS>', ...]
+        # =========================================
+        elif isinstance(data, list):
             vocab = data
             word2idx = {w: i for i, w in enumerate(vocab)}
-        elif isinstance(data, dict) and isinstance(list(data.keys())[0], str):
-            # format: {'<PAD>': 0, '<SOS>': 1, ...}
-            word2idx = data
-        elif isinstance(data, dict) and isinstance(list(data.keys())[0], int):
-            # format: {0: '<PAD>', 1: '<SOS>', ...} → idx2word, balik dulu
-            idx2word = data
-            word2idx = {w: i for i, w in data.items()}
+            idx2word = {i: w for w, i in word2idx.items()}
+
+        # =========================================
+        # FORMAT 3:
+        # {'<PAD>':0, ...}
+        # =========================================
+        elif isinstance(data, dict):
+
+            first_key = list(data.keys())[0]
+
+            # word2idx
+            if isinstance(first_key, str):
+                word2idx = data
+                idx2word = {i: w for w, i in word2idx.items()}
+
+            # idx2word
+            elif isinstance(first_key, int):
+                idx2word = data
+                word2idx = {w: i for i, w in idx2word.items()}
+
         else:
             st.error("Format vocab.pkl tidak dikenali.")
             word2idx = {}
 
         if word2idx:
-            idx2word = {i: w for w, i in word2idx.items()}
             vocab_ready = True
-            st.success(f"✅ Vocab dimuat: **{len(word2idx)} token**")
+            st.success(f"✅ Vocab dimuat: {len(word2idx)} token")
+
     except Exception as e:
         st.error(f"Gagal memuat vocab: {e}")
-
-if model_file and vocab_ready:
-    try:
-        encoder = Encoder(int(input_dim), int(hidden_dim))
-        decoder = Decoder(len(word2idx), int(hidden_dim))
-        slt_model = Seq2Seq(encoder, decoder).to(device)
-
-        with tempfile.NamedTemporaryFile(suffix=".pth", delete=False) as f:
-            f.write(model_file.read())
-            tmp_model_path = f.name
-
-        slt_model.load_state_dict(torch.load(tmp_model_path, map_location=device))
-        slt_model.eval()
-        os.unlink(tmp_model_path)
-        model_ready = True
-        st.success(f"✅ Model dimuat · device: `{device}`")
-    except Exception as e:
-        st.error(f"Gagal memuat model: {e}")
 
 # ─────────────────────────────────────────────
 # ARSITEKTUR INFO (collapsed)

@@ -361,8 +361,7 @@ def extract_keypoints(frame, pose_detector, hand_detector):
 
     if hand_result.hand_landmarks:
         pts = [[lm.x, lm.y, lm.z] for hand in hand_result.hand_landmarks for lm in hand]
-        flat = np.array(pts).flatten()
-        hand_kp[:len(flat)] = flat
+        hand_kp[:len(pts)*3] = np.array(pts).flatten()
 
     return np.concatenate([pose_kp, hand_kp])
 
@@ -397,6 +396,7 @@ def process_video(path, pose_detector, hand_detector):
 
 def predict_with_confidence(sequence, model, device, word2idx, idx2word, max_len=30):
     model.eval()
+    sequence = temporal_resample(sequence, target_len=100)
     src = torch.tensor(sequence, dtype=torch.float32).unsqueeze(0).to(device)
 
     with torch.no_grad():

@@ -1,7 +1,7 @@
 import os
 os.environ["MEDIAPIPE_DISABLE_GPU"] = "1"
-os.environ["EGL_PLATFORM"] = "surfaceless"  
 os.environ["MESA_GL_VERSION_OVERRIDE"] = "3.3"
+
 import pickle
 import re
 import tempfile
@@ -166,7 +166,6 @@ h1, h2, h3 { font-family: 'Space Mono', monospace !important; }
     margin: 1.25rem 0;
 }
 
-/* Streamlit button */
 .stButton > button {
     background: var(--accent) !important;
     color: #0d0f14 !important;
@@ -184,7 +183,6 @@ h1, h2, h3 { font-family: 'Space Mono', monospace !important; }
     box-shadow: 0 0 20px rgba(92,255,176,0.3) !important;
 }
 
-/* File uploader */
 [data-testid="stFileUploader"] {
     background: var(--surface) !important;
     border: 1px dashed var(--border) !important;
@@ -192,10 +190,8 @@ h1, h2, h3 { font-family: 'Space Mono', monospace !important; }
     padding: 1rem !important;
 }
 
-/* Progress / spinner */
 .stSpinner > div { color: var(--accent) !important; }
 
-/* Sidebar */
 [data-testid="stSidebar"] {
     background: var(--surface) !important;
     border-right: 1px solid var(--border) !important;
@@ -205,13 +201,11 @@ h1, h2, h3 { font-family: 'Space Mono', monospace !important; }
     color: var(--text) !important;
 }
 
-/* Alerts */
 .stAlert {
     border-radius: 10px !important;
     font-size: 0.88rem !important;
 }
 
-/* Expander */
 .streamlit-expanderHeader {
     background: var(--surface) !important;
     border-radius: 8px !important;
@@ -353,7 +347,6 @@ def load_mediapipe_detectors():
         return None, None
 
 
-
 def extract_keypoints(frame, pose_detector, hand_detector):
     image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
     pose_result = pose_detector.detect(image)
@@ -432,15 +425,16 @@ def predict_with_confidence(sequence, model, device, word2idx, idx2word, max_len
     avg_conf = float(np.mean(confidences)) if confidences else 0.0
     return " ".join(sentence_tokens), avg_conf, confidences
 
+
 # ─────────────────────────────────────────────
 # KONFIGURASI PATH
 # ─────────────────────────────────────────────
 _BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
 MODEL_PATH = os.path.join(_BASE_DIR, "model", "best_model.pth")
 VOCAB_PATH = os.path.join(_BASE_DIR, "model", "vocab.pkl")
-INPUT_DIM   = 450
-HIDDEN_DIM  = 256
-MAX_DECODE  = 30
+INPUT_DIM  = 450
+HIDDEN_DIM = 256
+MAX_DECODE = 30
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -487,7 +481,7 @@ else:
             st.error(f"Gagal memuat model: {e}")
 
 # ─────────────────────────────────────────────
-# SIDEBAR – Info saja
+# SIDEBAR
 # ─────────────────────────────────────────────
 with st.sidebar:
     st.markdown("### 🤟 BISINDO SLT")
@@ -512,9 +506,8 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-
 # ─────────────────────────────────────────────
-# ARSITEKTUR INFO (collapsed)
+# ARSITEKTUR INFO
 # ─────────────────────────────────────────────
 with st.expander("📐 Arsitektur Model", expanded=False):
     st.markdown("""
@@ -527,7 +520,6 @@ with st.expander("📐 Arsitektur Model", expanded=False):
   <div class="info-item"><label>Seq Len</label><span>100 (resampled)</span></div>
 </div>
     """, unsafe_allow_html=True)
-
     st.markdown("""
 <hr class="divider">
 <b>Token Khusus:</b><br>

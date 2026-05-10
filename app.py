@@ -308,51 +308,48 @@ def normalize(seq):
 
 @st.cache_resource
 def load_mediapipe_detectors():
-try:
-base_dir = os.path.dirname(os.path.abspath(**file**))
+    try:
+        base_dir = os.path.dirname(os.path.abspath(__file__))
 
-```
-    hand_path = os.path.join(base_dir, "hand_landmarker.task")
-    pose_path = os.path.join(base_dir, "pose_landmarker_lite.task")
+        hand_path = os.path.join(base_dir, "hand_landmarker.task")
+        pose_path = os.path.join(base_dir, "pose_landmarker_lite.task")
 
-    if not os.path.exists(hand_path):
-        st.error(f"❌ hand_landmarker.task tidak ditemukan di: {hand_path}")
-        return None, None
+        if not os.path.exists(hand_path):
+            st.error(f"❌ hand_landmarker.task tidak ditemukan di: {hand_path}")
+            return None, None
 
-    if not os.path.exists(pose_path):
-        st.error(f"❌ pose_landmarker_lite.task tidak ditemukan di: {pose_path}")
-        return None, None
+        if not os.path.exists(pose_path):
+            st.error(f"❌ pose_landmarker_lite.task tidak ditemukan di: {pose_path}")
+            return None, None
 
-    # FORCE CPU
-    base_options_hand = python.BaseOptions(
-        model_asset_path=hand_path,
-        delegate=python.BaseOptions.Delegate.CPU
-    )
-
-    hand_detector = vision.HandLandmarker.create_from_options(
-        vision.HandLandmarkerOptions(
-            base_options=base_options_hand,
-            num_hands=2
+        base_options_hand = python.BaseOptions(
+            model_asset_path=hand_path,
+            delegate=python.BaseOptions.Delegate.CPU
         )
-    )
 
-    base_options_pose = python.BaseOptions(
-        model_asset_path=pose_path,
-        delegate=python.BaseOptions.Delegate.CPU
-    )
-
-    pose_detector = vision.PoseLandmarker.create_from_options(
-        vision.PoseLandmarkerOptions(
-            base_options=base_options_pose
+        hand_detector = vision.HandLandmarker.create_from_options(
+            vision.HandLandmarkerOptions(
+                base_options=base_options_hand,
+                num_hands=2
+            )
         )
-    )
 
-    return pose_detector, hand_detector
+        base_options_pose = python.BaseOptions(
+            model_asset_path=pose_path,
+            delegate=python.BaseOptions.Delegate.CPU
+        )
 
-except Exception as e:
-    st.error(f"❌ Error load MediaPipe: {e}")
-    return None, None
-```
+        pose_detector = vision.PoseLandmarker.create_from_options(
+            vision.PoseLandmarkerOptions(
+                base_options=base_options_pose
+            )
+        )
+
+        return pose_detector, hand_detector
+
+    except Exception as e:
+        st.error(f"❌ Error load MediaPipe: {e}")
+        return None, None
 
 
 

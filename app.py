@@ -309,11 +309,12 @@ def normalize(seq):
 @st.cache_resource
 def load_mediapipe_detectors():
 try:
-base_dir  = os.path.dirname(os.path.abspath(**file**))
-hand_path = os.path.join(base_dir, "hand_landmarker.task")
-pose_path = os.path.join(base_dir, "pose_landmarker_lite.task")
+base_dir = os.path.dirname(os.path.abspath(**file**))
 
 ```
+    hand_path = os.path.join(base_dir, "hand_landmarker.task")
+    pose_path = os.path.join(base_dir, "pose_landmarker_lite.task")
+
     if not os.path.exists(hand_path):
         st.error(f"❌ hand_landmarker.task tidak ditemukan di: {hand_path}")
         return None, None

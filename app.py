@@ -401,27 +401,73 @@ def predict_with_confidence(sequence, model, device, word2idx, idx2word, max_len
     avg_conf = float(np.mean(confidences)) if confidences else 0.0
     return " ".join(sentence_tokens), avg_conf, confidences
 
+# ─────────────────────────────────────────────
+# KONFIGURASI PATH
+# ─────────────────────────────────────────────
+MODEL_PATH = "model/best_model.pth"
+VOCAB_PATH  = "model/vocab.pkl"
+INPUT_DIM   = 450
+HIDDEN_DIM  = 256
+MAX_DECODE  = 30
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # ─────────────────────────────────────────────
-# SIDEBAR – Model Loader
+# LOAD OTOMATIS SAAT STARTUP
+# ─────────────────────────────────────────────
+@st.cache_resource
+def load_vocab():
+    with open(VOCAB_PATH, "rb") as f:
+        data = pickle.load(f)
+    word2idx = data["word2idx"]
+    idx2word = data["idx2word"]
+    return word2idx, idx2word
+
+@st.cache_resource
+def load_model(vocab_size):
+    encoder = Encoder(INPUT_DIM, HIDDEN_DIM)
+    decoder = Decoder(vocab_size, HIDDEN_DIM)
+    model   = Seq2Seq(encoder, decoder).to(device)
+    model.load_state_dict(torch.load(MODEL_PATH, map_location=device))
+    model.eval()
+    return model
+
+model_ready = False
+vocab_ready = False
+word2idx, idx2word, slt_model = {}, {}, None
+
+if not os.path.exists(VOCAB_PATH):
+    st.error("❌ File vocab.pkl tidak ditemukan di folder model/")
+elif not os.path.exists(MODEL_PATH):
+    st.error("❌ File best_model.pth tidak ditemukan di folder model/")
+else:
+    try:
+        word2idx, idx2word = load_vocab()
+        vocab_ready = True
+    except Exception as e:
+        st.error(f"Gagal memuat vocab: {e}")
+
+    if vocab_ready:
+        try:
+            slt_model = load_model(len(word2idx))
+            model_ready = True
+        except Exception as e:
+            st.error(f"Gagal memuat model: {e}")
+
+# ─────────────────────────────────────────────
+# SIDEBAR – Info saja
 # ─────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("### ⚙️ Konfigurasi Model")
+    st.markdown("### 🤟 BISINDO SLT")
     st.markdown("---")
-
-    model_file = st.file_uploader("Upload Model (`.pth`)", type=["pth"], key="model_uploader")
-    vocab_file = st.file_uploader("Upload Vocab (`.pkl`)", type=["pkl"], key="vocab_uploader",
-                              help="File .pkl berisi list vocab atau dict word2idx")
-    
+    if model_ready:
+        st.success("Model aktif")
+        st.caption(f"Vocab: {len(word2idx)} token")
+        st.caption(f"Device: {device}")
+    else:
+        st.warning("Model belum siap")
     st.markdown("---")
-    st.markdown("**Parameter**")
-    input_dim = st.number_input("Input Dim", value=450, min_value=1, step=1)
-    hidden_dim = st.number_input("Hidden Dim", value=256, min_value=1, step=1)
-    max_decode_len = st.slider("Max Decode Length", 5, 50, 30)
-
-    st.markdown("---")
-    st.caption("BISINDO SLT · CNN-GRU + Bahdanau Attention")
-
+    st.caption("CNN-GRU + Bahdanau Attention")
 
 # ─────────────────────────────────────────────
 # HERO
@@ -434,69 +480,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ─────────────────────────────────────────────
-# LOAD MODEL & VOCAB
-# ─────────────────────────────────────────────
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-model_ready = False
-vocab_ready = False
-word2idx, idx2word = {}, {}
-slt_model = None
-
-if vocab_file:
-    try:
-        data = pickle.load(vocab_file)
-
-        # =========================================
-        # FORMAT 1:
-        # (word2idx, idx2word)
-        # =========================================
-        if (
-            isinstance(data, tuple)
-            and len(data) == 2
-            and isinstance(data[0], dict)
-            and isinstance(data[1], dict)
-        ):
-            word2idx, idx2word = data
-
-        # =========================================
-        # FORMAT 2:
-        # ['<PAD>', '<SOS>', ...]
-        # =========================================
-        elif isinstance(data, list):
-            vocab = data
-            word2idx = {w: i for i, w in enumerate(vocab)}
-            idx2word = {i: w for w, i in word2idx.items()}
-
-        # =========================================
-        # FORMAT 3:
-        # {'<PAD>':0, ...}
-        # =========================================
-        elif isinstance(data, dict):
-
-            first_key = list(data.keys())[0]
-
-            # word2idx
-            if isinstance(first_key, str):
-                word2idx = data
-                idx2word = {i: w for w, i in word2idx.items()}
-
-            # idx2word
-            elif isinstance(first_key, int):
-                idx2word = data
-                word2idx = {w: i for i, w in idx2word.items()}
-
-        else:
-            st.error("Format vocab.pkl tidak dikenali.")
-            word2idx = {}
-
-        if word2idx:
-            vocab_ready = True
-            st.success(f"✅ Vocab dimuat: {len(word2idx)} token")
-
-    except Exception as e:
-        st.error(f"Gagal memuat vocab: {e}")
 
 # ─────────────────────────────────────────────
 # ARSITEKTUR INFO (collapsed)
@@ -548,9 +531,6 @@ if video_file:
 
     run_btn = st.button("🔍 Terjemahkan Video", disabled=not model_ready)
 
-    if not model_ready:
-        st.caption("⚠️ Upload model `.pth` dan vocab `.npz` di sidebar terlebih dahulu.")
-
     if run_btn and model_ready:
         pose_det, hand_det = load_mediapipe_detectors()
 
@@ -567,7 +547,7 @@ if video_file:
 
                 with st.spinner("Mendekode kalimat..."):
                     sentence, avg_conf, per_token_conf = predict_with_confidence(
-                        seq, slt_model, device, word2idx, idx2word, max_len=max_decode_len
+                        seq, slt_model, device, word2idx, idx2word, max_len=MAX_DECODE
                     )
 
                 conf_pct = avg_conf * 100

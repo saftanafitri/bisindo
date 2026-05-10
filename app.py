@@ -1,4 +1,7 @@
 import os
+os.environ["MEDIAPIPE_DISABLE_GPU"] = "1"
+os.environ["EGL_PLATFORM"] = "surfaceless"  
+os.environ["MESA_GL_VERSION_OVERRIDE"] = "3.3"
 import pickle
 import re
 import tempfile

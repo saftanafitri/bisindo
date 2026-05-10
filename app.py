@@ -329,7 +329,6 @@ def load_mediapipe_detectors():
             model_asset_path=hand_path,
             delegate=python.BaseOptions.Delegate.CPU
         )
-
         hand_detector = vision.HandLandmarker.create_from_options(
             vision.HandLandmarkerOptions(
                 base_options=base_options_hand,
@@ -341,7 +340,6 @@ def load_mediapipe_detectors():
             model_asset_path=pose_path,
             delegate=python.BaseOptions.Delegate.CPU
         )
-
         pose_detector = vision.PoseLandmarker.create_from_options(
             vision.PoseLandmarkerOptions(
                 base_options=base_options_pose
